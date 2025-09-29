@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projected Billing Calculator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration for Branding -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Colors derived from the old logo/brand for aesthetic consistency
+                        'procare-purple': '#4A235A', // Main brand color (Deep Purple)
+                        'procare-peach': '#FFAB91',  // Accent color (Light Peach/Heart color)
+                        'procare-light-bg': '#F6E4EE', // Very light purple for backgrounds
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Load Plotly.js for interactive charting -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+        .container-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .input-group label {
+            font-weight: 600;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-4 sm:p-8 min-h-screen flex items-start justify-center">
+
+    <div class="w-full max-w-5xl">
+        <header class="text-center mb-8">
+            <!-- New text title -->
+            <h1 class="text-4xl font-extrabold text-procare-purple mb-2">ProCare Therapy: The Money Team</h1>
+            <p class="text-xl font-medium text-gray-700 mt-2">Billing & Revenue Projection Tool</p>
+            <!-- UPDATED TAGLINE: 'Billings Over Feelings' is now italicized, and the rest of the line is not. -->
+            <p class="text-gray-600 mt-1 font-semibold">Making it easy to project billings or determine the revenue needed to achieve targets — putting <i>Billings Over Feelings</i>.</p>
+        </header>
+
+        <main class="grid lg:grid-cols-3 gap-8">
+            <!-- Input Card -->
+            <div class="lg:col-span-1 container-card bg-white p-6 rounded-xl border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Input Parameters</h2>
+                
+                <!-- MODE SELECTOR -->
+                <div class="mb-6 p-3 bg-procare-light-bg rounded-lg">
+                    <label class="block text-sm text-procare-purple font-bold mb-2">Calculation Mode:</label>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 text-sm">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="calc_mode" value="forward" id="mode-forward" checked onchange="setMode('forward')" class="form-radio text-procare-purple h-4 w-4 focus:ring-procare-purple">
+                            <span class="ml-2 text-gray-700 font-medium">Revenue Converted to Billings</span>
+                        </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="calc_mode" value="reverse" id="mode-reverse" onchange="setMode('reverse')" class="form-radio text-procare-purple h-4 w-4 focus:ring-procare-purple">
+                            <span class="ml-2 text-gray-700 font-medium">Billings Converted to Revenue</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- NEW Input Field 1: Revenue (Forward Mode) - Container for 5 weeks -->
+                <div id="input-revenue-container" class="input-group mb-6">
+                    <label class="block text-base font-bold text-gray-700 mb-2 border-b pb-2">Projected Revenue (5 Weeks, in Thousands $)</label>
+                    <div id="revenue-inputs-list" class="space-y-3">
+                        <div class="relative rounded-lg shadow-sm">
+                            <input type="number" id="revenue-week-1" value="20" min="0" placeholder="Week 1 (e.g., 20 for $20k)" oninput="updateGraph()"
+                                   class="revenue-input block w-full rounded-lg border-gray-300 p-3 pl-10 text-base focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-base">$</span>
+                            </div>
+                        </div>
+                        <div class="relative rounded-lg shadow-sm">
+                            <input type="number" id="revenue-week-2" value="20" min="0" placeholder="Week 2 (e.g., 20 for $20k)" oninput="updateGraph()"
+                                   class="revenue-input block w-full rounded-lg border-gray-300 p-3 pl-10 text-base focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-base">$</span>
+                            </div>
+                        </div>
+                        <div class="relative rounded-lg shadow-sm">
+                            <input type="number" id="revenue-week-3" value="20" min="0" placeholder="Week 3 (e.g., 20 for $20k)" oninput="updateGraph()"
+                                   class="revenue-input block w-full rounded-lg border-gray-300 p-3 pl-10 text-base focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-base">$</span>
+                            </div>
+                        </div>
+                        <div class="relative rounded-lg shadow-sm">
+                            <input type="number" id="revenue-week-4" value="20" min="0" placeholder="Week 4 (e.g., 20 for $20k)" oninput="updateGraph()"
+                                   class="revenue-input block w-full rounded-lg border-gray-300 p-3 pl-10 text-base focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-base">$</span>
+                            </div>
+                        </div>
+                        <div class="relative rounded-lg shadow-sm">
+                            <input type="number" id="revenue-week-5" value="20" min="0" placeholder="Week 5 (e.g., 20 for $20k)" oninput="updateGraph()"
+                                   class="revenue-input block w-full rounded-lg border-gray-300 p-3 pl-10 text-base focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <span class="text-gray-500 text-lg">$</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Field 1: Billing (Reverse Mode) -->
+                <div id="input-billing" class="input-group mb-6 hidden">
+                    <label for="billing" class="block text-sm text-gray-700 mb-1">Projected Billing (in Thousands $)</label>
+                    <div class="relative rounded-lg shadow-sm">
+                        <input type="number" id="billing" value="25" min="0" oninput="updateGraph()"
+                               class="block w-full rounded-lg border-gray-300 p-3 pl-10 text-lg focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="text-gray-500 text-lg">$</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Input Field 2: Margin (Always Active) -->
+                <div class="input-group mb-8">
+                    <label for="margin" class="block text-sm text-gray-700 mb-1">Projected Margin (%)</label>
+                    <div class="relative rounded-lg shadow-sm">
+                        <input type="number" id="margin" value="25" min="0" max="100" oninput="updateGraph()"
+                               class="block w-full rounded-lg border-gray-300 p-3 pr-10 text-lg focus:border-procare-purple focus:ring-procare-purple transition duration-150">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <span class="text-gray-500 text-lg">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Display (Content changes based on mode) -->
+                <div class="p-4 bg-procare-light-bg border-l-4 border-procare-peach rounded-lg">
+                    <p id="result-label" class="text-sm font-medium text-procare-purple">Calculated Projected Billing (Gross Profit):</p>
+                    <p id="calculated-result" class="text-3xl font-bold text-procare-purple mt-1">$25,000.00</p>
+                    <p id="formula-display" class="text-xs text-gray-500 mt-2">
+                        Formula used: $\text{Projected Margin (Billing)} = (\text{Weekly Revenue Total}) \times \text{Margin Rate}$
+                    </p>
+                    <!-- New section for weekly averages (only visible in "Billings Converted to Revenue" mode) -->
+                    <div id="weekly-average-container" class="mt-4 pt-3 border-t border-procare-purple hidden">
+                        <p id="avg-4-week" class="text-sm text-gray-700 font-medium"></p>
+                        <p id="avg-5-week" class="text-sm text-gray-700 font-medium mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Card -->
+            <div class="lg:col-span-2 container-card bg-white p-4 rounded-xl border border-gray-200 flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 px-2">Projected Margin Scenario</h2>
+                <div id="billing-projection-chart" class="flex-grow min-h-[400px] w-full">
+                    <!-- Plotly Chart will be injected here -->
+                </div>
+                <p class="text-sm text-center text-gray-500 pt-2 border-t mt-4">
+                    The line shows your calculated Margin (Projected Billing) at the chosen margin rate across various revenue points.
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables for convenience
+        let currentMode = 'forward'; // 'forward' or 'reverse'
+        const THOUSAND_MULTIPLIER = 1000; // Multiplier to convert input to actual dollar value
+        // Define RGB values for Plotly charting based on ProCare branding
+        const BRAND_COLOR_PURPLE = 'rgb(74, 35, 90)'; 
+        const ACCENT_COLOR_PEACH = 'rgb(255, 171, 145)'; // Derived from #FFAB91
+
+        // Input references
+        const revenueInputsContainer = document.getElementById('input-revenue-container');
+        const billingInput = document.getElementById('billing');
+        const marginInput = document.getElementById('margin');
+
+        const inputBillingDiv = document.getElementById('input-billing');
+        
+        const calculatedResultDisplay = document.getElementById('calculated-result');
+        const resultLabel = document.getElementById('result-label');
+        const formulaDisplay = document.getElementById('formula-display');
+        const chartDiv = 'billing-projection-chart';
+        
+        // New references for weekly averages
+        const weeklyAverageContainer = document.getElementById('weekly-average-container');
+        const avg4WeekDisplay = document.getElementById('avg-4-week');
+        const avg5WeekDisplay = document.getElementById('avg-5-week');
+
+
+        // Helper function for currency formatting
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+        };
+
+        /**
+         * Switches the calculation mode (forward or reverse).
+         * @param {string} mode - 'forward' or 'reverse'
+         */
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Show/hide the relevant primary input field
+            if (mode === 'forward') {
+                revenueInputsContainer.classList.remove('hidden');
+                inputBillingDiv.classList.add('hidden');
+                // Ensure formula text is set for forward mode on switch
+                formulaDisplay.innerHTML = `Formula used: $\\text{Projected Margin (Billing)} = (\\text{Weekly Revenue Total}) \\times \\text{Margin Rate}$`;
+            } else {
+                revenueInputsContainer.classList.add('hidden');
+                inputBillingDiv.classList.remove('hidden');
+                // Ensure formula text is set for reverse mode on switch
+                formulaDisplay.innerHTML = `Formula used: $\\text{Required Revenue} = \\text{Billing} / \\text{Margin Rate}$`;
+            }
+            
+            updateGraph();
+        }
+
+        /**
+         * Main function to perform calculations and update the graph.
+         */
+        function updateGraph() {
+            const marginPercent = parseFloat(marginInput.value) || 0;
+
+            // Input validation for Margin Rate
+            if (marginPercent < 0 || marginPercent > 100) {
+                calculatedResultDisplay.textContent = "Invalid Margin Rate";
+                Plotly.purge(chartDiv);
+                return;
+            }
+            
+            const marginRate = marginPercent / 100;
+
+            let calculatedRevenue = 0;
+            let calculatedBilling = 0;
+            let inputRevenue = 0; // Total Revenue from 5 weeks (forward mode)
+            let inputBilling = 0; // Billing input (reverse mode)
+            
+            // --- Calculation Logic based on Mode ---
+            if (currentMode === 'forward') {
+                // Mode: Revenue -> Billing
+                let totalRevenueInThousands = 0;
+                let inputsValid = true;
+
+                // Sum up the 5 weekly revenue inputs (in thousands)
+                const weekInputs = document.querySelectorAll('.revenue-input');
+                
+                weekInputs.forEach(input => {
+                    const val = parseFloat(input.value) || 0;
+                    if (val < 0) {
+                        inputsValid = false;
+                    }
+                    totalRevenueInThousands += val;
+                });
+                
+                // Convert to actual dollars for calculation
+                inputRevenue = totalRevenueInThousands * THOUSAND_MULTIPLIER;
+                
+                if (!inputsValid) {
+                    calculatedResultDisplay.textContent = "Invalid Revenue (Cannot be negative)";
+                    Plotly.purge(chartDiv);
+                    return;
+                }
+                
+                calculatedRevenue = inputRevenue;
+                calculatedBilling = inputRevenue * marginRate;
+
+                // Update UI elements for forward mode
+                resultLabel.textContent = "Calculated Projected Billing (Gross Profit):";
+                formulaDisplay.innerHTML = `Formula used: $\\text{Projected Margin (Billing)} = (\\text{Weekly Revenue Total}) \\times \\text{Margin Rate}$`;
+                calculatedResultDisplay.textContent = formatCurrency(calculatedBilling);
+
+                // Hide weekly averages
+                weeklyAverageContainer.classList.add('hidden');
+
+
+            } else {
+                // Mode: Billing -> Revenue 
+                
+                // Convert input billing (in thousands) to actual dollars
+                inputBilling = (parseFloat(billingInput.value) || 0) * THOUSAND_MULTIPLIER;
+                
+                if (inputBilling < 0) {
+                    calculatedResultDisplay.textContent = "Invalid Billing Amount";
+                    Plotly.purge(chartDiv);
+                    return;
+                }
+                
+                if (marginRate === 0) {
+                    calculatedResultDisplay.textContent = "Margin must be > 0%";
+                    calculatedRevenue = NaN;
+                } else {
+                    // Revenue = Billing / Margin Rate (using actual dollar values)
+                    calculatedRevenue = inputBilling / marginRate;
+                }
+                calculatedBilling = inputBilling;
+
+                // Update UI elements for reverse mode
+                resultLabel.textContent = "Calculated Required Revenue:";
+                formulaDisplay.innerHTML = `Formula used: $\\text{Required Revenue} = \\text{Billing} / \\text{Margin Rate}$`;
+                
+                if (isNaN(calculatedRevenue) || !isFinite(calculatedRevenue)) {
+                     calculatedResultDisplay.textContent = "N/A (Margin is 0%)";
+                     // Hide weekly averages if calculation fails
+                     weeklyAverageContainer.classList.add('hidden');
+                } else {
+                    calculatedResultDisplay.textContent = formatCurrency(calculatedRevenue);
+                    
+                    // New: Calculate and display weekly averages
+                    const avg4Week = calculatedRevenue / 4;
+                    const avg5Week = calculatedRevenue / 5;
+
+                    avg4WeekDisplay.textContent = `An average revenue of ${formatCurrency(avg4Week)} is needed per week, assuming a 4-week month.`;
+                    avg5WeekDisplay.textContent = `An average revenue of ${formatCurrency(avg5Week)} is needed per week, assuming a 5-week month.`;
+                    
+                    // Show weekly averages
+                    weeklyAverageContainer.classList.remove('hidden');
+                }
+            }
+
+            // --- Plotly Chart Generation ---
+
+            // 1. Generate Data for the Projection Line 
+            const baseRevenue = isFinite(calculatedRevenue) && calculatedRevenue > 0 ? calculatedRevenue : 100000;
+            const rangeFactor = 0.5; 
+            const minRevenue = baseRevenue * rangeFactor;
+            const maxRevenue = baseRevenue * (2 - rangeFactor);
+
+            let revenuePoints = [];
+            let billingPoints = [];
+            const numPoints = 20;
+
+            for (let i = 0; i < numPoints; i++) {
+                const currentRevenue = minRevenue + (maxRevenue - minRevenue) * (i / (numPoints - 1));
+                const currentBilling = currentRevenue * marginRate; 
+                revenuePoints.push(currentRevenue);
+                billingPoints.push(currentBilling);
+            }
+
+            // 2. Define the traces (data lines)
+            const traces = [
+                {
+                    x: revenuePoints,
+                    y: billingPoints,
+                    mode: 'lines',
+                    name: `Projected Margin (${marginPercent}% Rate)`,
+                    line: { color: BRAND_COLOR_PURPLE, width: 3 },
+                    hoverinfo: 'text',
+                    text: billingPoints.map((b, i) => 
+                        `Revenue: ${formatCurrency(revenuePoints[i])}<br>Billing: ${formatCurrency(b)}`
+                    ),
+                    hovertemplate: '%{text}<extra></extra>'
+                },
+                {
+                    x: [calculatedRevenue],
+                    y: [calculatedBilling],
+                    mode: 'markers',
+                    name: (currentMode === 'forward' ? 'Calculated Billing Point' : 'Required Revenue Point'),
+                    marker: { size: 12, color: ACCENT_COLOR_PEACH, symbol: 'circle' },
+                    hoverinfo: 'text',
+                    text: `Revenue: ${formatCurrency(calculatedRevenue)}<br>Billing: ${formatCurrency(calculatedBilling)}<br>Margin Rate: ${marginPercent}%`,
+                    hovertemplate: '%{text}<extra></extra>'
+                }
+            ];
+            if (!isFinite(calculatedRevenue)) {
+                traces[1].x = [];
+                traces[1].y = [];
+            }
+            const layout = {
+                height: 400,
+                autosize: true,
+                margin: { l: 70, r: 20, t: 30, b: 50 },
+                xaxis: { 
+                    title: 'Revenue ($)', 
+                    tickprefix: '$',
+                    showgrid: true,
+                    rangemode: 'tozero'
+                },
+                yaxis: { 
+                    title: 'Calculated Margin / Billing ($)', 
+                    tickprefix: '$',
+                    showgrid: true,
+                },
+                legend: {
+                    orientation: "h",
+                    yanchor: "bottom",
+                    y: 1.02,
+                    xanchor: "right",
+                    x: 1
+                },
+                responsive: true 
+            };
+
+            Plotly.newPlot(chartDiv, traces, layout, {displayModeBar: false, responsive: true});
+        }
+
+        window.onload = function() {
+            setMode('forward'); 
+        };
+
+        window.onresize = function() {
+            Plotly.relayout(chartDiv, {width: 'auto', height: 'auto'});
+        };
+    </script>
+</body>
+</html>
